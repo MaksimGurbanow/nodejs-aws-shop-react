@@ -2,6 +2,7 @@ import React from "react";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import axios from "axios";
+import { Buffer } from "buffer";
 
 type CSVFileImportProps = {
   url: string;
@@ -10,6 +11,10 @@ type CSVFileImportProps = {
 
 export default function CSVFileImport({ url, title }: CSVFileImportProps) {
   const [file, setFile] = React.useState<File | null>();
+  const credentials = `${localStorage.getItem(
+    "USERNAME"
+  )}:${localStorage.getItem("PASSWORD")}`;
+  const encodedCredentials = Buffer.from(credentials).toString("base64");
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -25,26 +30,28 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
   };
 
   const uploadFile = async () => {
-    console.log("uploadFile to", url);
-    if (!file) {
-      return;
-    }
+    try {
+      const response = await axios.get(url, {
+        params: { name: encodeURIComponent(file?.name || "") },
+        headers: {
+          Authorization: `Basic ${encodedCredentials}`,
+        },
+      });
 
-    const response = await axios({
-      method: "GET",
-      url,
-      params: {
-        name: encodeURIComponent(file.name),
-      },
-    });
-    console.log("File to upload: ", file.name);
-    console.log("Uploading to: ", response.data);
-    const result = await fetch(response.data, {
-      method: "PUT",
-      body: file,
-    });
-    console.log("Result: ", result);
-    setFile(null);
+      const result = await fetch(response.data, {
+        method: "PUT",
+        body: file,
+      });
+
+      if (!result.ok) {
+        throw new Error("Upload failed");
+      }
+
+      console.log("Upload successful");
+      setFile(null);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    }
   };
   return (
     <Box>
