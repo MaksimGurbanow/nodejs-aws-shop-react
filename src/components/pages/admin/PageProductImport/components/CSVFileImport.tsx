@@ -2,7 +2,6 @@ import React from "react";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import axios from "axios";
-import { Buffer } from "buffer";
 
 type CSVFileImportProps = {
   url: string;
@@ -11,10 +10,6 @@ type CSVFileImportProps = {
 
 export default function CSVFileImport({ url, title }: CSVFileImportProps) {
   const [file, setFile] = React.useState<File | null>();
-  const credentials = `${localStorage.getItem(
-    "USERNAME"
-  )}:${localStorage.getItem("PASSWORD")}`;
-  const encodedCredentials = Buffer.from(credentials).toString("base64");
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -31,10 +26,13 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
 
   const uploadFile = async () => {
     try {
+      console.log("Basic " + localStorage.getItem("authorization_token") || "");
       const response = await axios.get(url, {
         params: { name: encodeURIComponent(file?.name || "") },
         headers: {
-          Authorization: `Basic ${encodedCredentials}`,
+          Authorization: `Basic ${
+            localStorage.getItem("authorization_token") || ""
+          }`,
         },
       });
 
